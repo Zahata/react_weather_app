@@ -5,8 +5,19 @@ function App() {
   const [data, setData] = useState({});
   const [location, setLocation] = useState('');
   const defaultLocation = 'Pernik';
+  let latitude, longitude;
+  let initialUrl;
   const url = `https://api.openweathermap.org/data/2.5/weather?q=${location ? location : defaultLocation}&units=metric&appid=${'d6849123ed89f71cde8cf59dc707c017'}`;
 
+  const successfulLookup = (position) => {
+    latitude = position.coords.latitude;
+    longitude = position.coords.longitude;
+    initialUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${'d6849123ed89f71cde8cf59dc707c017'}`;
+  }
+
+  const error = () => {
+    console.warn('Unable to retrieve user geolocation');
+  }
   
   const searchLocation = (event) => {
     if(event.key === 'Enter') {
@@ -18,10 +29,21 @@ function App() {
   }
 
   const initialOnLoadLocation = () => {
-    axios.get(url).then((response) => {
-      setData(response.data);
-    })
-    setLocation('');
+    if(window.navigator.geolocation){
+      window.navigator.geolocation.getCurrentPosition(successfulLookup, error);
+    } else {
+      console.error('Your browser doesn`t support geolocation');
+    }
+    
+    setTimeout(() => {
+      console.log(initialUrl);
+      if(initialUrl){
+        axios.get(initialUrl).then((response) => {
+          setData(response.data);
+        })
+        setLocation('');
+      }
+    }, 200);
   }
   
   useEffect(() => {
@@ -50,7 +72,7 @@ function App() {
             {data.weather ? <p>{data.weather[0].main}</p> : null}
           </div>
         </div>
-        {data.name != undefined && 
+        {data.name !== undefined && 
           <div className='bottom'>
             <div className='feels'>
               {data.main ? <p className='bold'>{data.main.feels_like.toFixed()}°C</p> : null}
